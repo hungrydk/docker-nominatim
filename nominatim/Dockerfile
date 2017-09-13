@@ -1,9 +1,7 @@
 FROM ubuntu:16.04
-MAINTAINER Fabian Köster <mail@fabian-koester.com>
 
 EXPOSE 80
 
-ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
     apache2 \
     build-essential \
@@ -48,10 +46,7 @@ RUN set -x \
     && chmod +x /usr/local/bin/gosu \
     && gosu nobody true
 
-ARG WEBROOT=/var/www/html/
-RUN groupadd -r nominatim && useradd -r -g nominatim nominatim
-RUN mkdir -p ${WEBROOT} /app && chmod -R 755 ${WEBROOT} /app && chown -R nominatim:nominatim ${WEBROOT} /app
-
+# Build nominatim
 WORKDIR /app
 ARG NOMINATIM_VERSION=3.0.1
 ARG NOMINATIM_SHA256=30c19ba03bae0b23bd789758e41849da65b5a2104e69f072d4c754cb9b509c57
@@ -64,8 +59,9 @@ RUN gosu nominatim curl -o nominatim.tar.bz2 http://www.nominatim.org/release/No
   && gosu nominatim cmake ../Nominatim-${NOMINATIM_VERSION} \
   && gosu nominatim make
 
-RUN gosu nominatim cp -R build/website/ ${WEBROOT}/nominatim \
- && gosu nominatim cp -R build/settings ${WEBROOT}
+ARG WEBROOT=/app/build/website
+RUN groupadd -r nominatim && useradd -r -g nominatim nominatim
+RUN chmod -R 755 ${WEBROOT} /app && chown -R nominatim:nominatim ${WEBROOT} /app
 
 COPY entrypoint.sh wait-for-it.sh ./
 COPY local.php ./build/settings/local.php
