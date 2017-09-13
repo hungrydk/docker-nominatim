@@ -1,4 +1,4 @@
-FROM debian:jessie
+FROM ubuntu:16.04
 MAINTAINER Fabian Köster <mail@fabian-koester.com>
 
 EXPOSE 80
@@ -8,28 +8,31 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     apache2 \
     build-essential \
     ca-certificates \
+    cmake \
     curl \
-    libapache2-mod-php5 \
+    g++ \
+    libapache2-mod-php \
     libboost-dev \
     libboost-filesystem-dev \
     libboost-system-dev \
     libboost-thread-dev \
     libbz2-dev \
-    libexpat-dev \
-    libgeos-c1 \
+    libexpat1-dev \
+    libgeos-dev \
     libgeos++-dev \
     libpq-dev \
     libproj-dev \
-    libtool \
     libxml2-dev \
     php-db \
-    php5 \
-    php5-json \
-    php5-pgsql \
+    php \
+    php-intl \
+    php-pgsql \
     php-pear \
     postgresql-client \
-    postgresql-server-dev-9.4 \
-    proj-bin \
+    postgresql-server-dev-9.5 \
+    postgresql-9.5-postgis-2.2 \
+    postgresql-contrib-9.5 \
+    zlib1g-dev \
  && rm -rf /var/lib/apt/lists/*
 
 # Install gosu
@@ -45,27 +48,30 @@ RUN set -x \
     && chmod +x /usr/local/bin/gosu \
     && gosu nobody true
 
-ARG WEBROOT=/var/www/html/nominatim
+ARG WEBROOT=/var/www/html/
 RUN groupadd -r nominatim && useradd -r -g nominatim nominatim
 RUN mkdir -p ${WEBROOT} /app && chmod -R 755 ${WEBROOT} /app && chown -R nominatim:nominatim ${WEBROOT} /app
 
 WORKDIR /app
-ARG NOMINATIM_VERSION=2.5.1
-ARG NOMINATIM_SHA256=0c2d7fcafc3caa42b3f5f2041ecf33bb22377ffe861a0b97a5aa27b6552d597b
+ARG NOMINATIM_VERSION=3.0.1
+ARG NOMINATIM_SHA256=30c19ba03bae0b23bd789758e41849da65b5a2104e69f072d4c754cb9b509c57
 RUN gosu nominatim curl -o nominatim.tar.bz2 http://www.nominatim.org/release/Nominatim-${NOMINATIM_VERSION}.tar.bz2 \
   && echo "${NOMINATIM_SHA256} nominatim.tar.bz2" | sha256sum -c \
-  && gosu nominatim tar -xf nominatim.tar.bz2 --strip-components=1 \
+  && gosu nominatim tar -xf nominatim.tar.bz2 \
   && rm *.tar.bz2 \
-  && gosu nominatim ./configure \
+  && gosu nominatim mkdir build \
+  && cd build \
+  && gosu nominatim cmake ../Nominatim-${NOMINATIM_VERSION} \
   && gosu nominatim make
 
+RUN gosu nominatim cp -R build/website/ ${WEBROOT}/nominatim \
+ && gosu nominatim cp -R build/settings ${WEBROOT}
+
 COPY entrypoint.sh wait-for-it.sh ./
-COPY local.php ./settings/local.php
+COPY local.php ./build/settings/local.php
 COPY apache.conf /etc/apache2/sites-available/000-default.conf
 COPY apache2-foreground /usr/local/bin
 
-RUN gosu nominatim /app/utils/setup.php --create-website /var/www/html/nominatim
-
 VOLUME /importdata
-VOLUME /app/module
+VOLUME /app/build/module
 CMD /app/entrypoint.sh
