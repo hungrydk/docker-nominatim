@@ -46,6 +46,10 @@ RUN set -x \
     && chmod +x /usr/local/bin/gosu \
     && gosu nobody true
 
+ARG WEBROOT=/app/build/website
+RUN groupadd -r nominatim && useradd -r -g nominatim nominatim
+RUN mkdir -p ${WEBROOT} && chmod -R 755 ${WEBROOT} /app && chown -R nominatim:nominatim ${WEBROOT} /app
+
 # Build nominatim
 WORKDIR /app
 ARG NOMINATIM_VERSION=3.0.1
@@ -54,14 +58,9 @@ RUN gosu nominatim curl -o nominatim.tar.bz2 http://www.nominatim.org/release/No
   && echo "${NOMINATIM_SHA256} nominatim.tar.bz2" | sha256sum -c \
   && gosu nominatim tar -xf nominatim.tar.bz2 \
   && rm *.tar.bz2 \
-  && gosu nominatim mkdir build \
   && cd build \
   && gosu nominatim cmake ../Nominatim-${NOMINATIM_VERSION} \
   && gosu nominatim make
-
-ARG WEBROOT=/app/build/website
-RUN groupadd -r nominatim && useradd -r -g nominatim nominatim
-RUN chmod -R 755 ${WEBROOT} /app && chown -R nominatim:nominatim ${WEBROOT} /app
 
 COPY entrypoint.sh wait-for-it.sh ./
 COPY local.php ./build/settings/local.php
