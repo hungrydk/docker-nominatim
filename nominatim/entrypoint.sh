@@ -44,10 +44,6 @@ function initialization {
   UTILS_DIR=/app/build/utils
   gosu nominatim ${UTILS_DIR}/setup.php --osm-file /importdata/data.osm.pbf --all --osm2pgsql-cache ${OSM2PGSQL_CACHE} 2>&1 || die "Import failed"
 
-  log_info "...importing country codes and names..."
-  gosu nominatim ${UTILS_DIR}/specialphrases.php --countries > /tmp/specialphrases_countries.sql
-  gosu nominatim psql -d nominatim -f /tmp/specialphrases_countries.sql
-
   log_info "...importing special phrases..."
   gosu nominatim ${UTILS_DIR}/specialphrases.php --wiki-import > /tmp/specialphrases.sql
   gosu nominatim psql -d nominatim -f /tmp/specialphrases.sql
