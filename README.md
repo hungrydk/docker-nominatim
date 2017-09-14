@@ -19,7 +19,7 @@ This design of course means you cannot just prebuilt the ready-to-use Nominatim 
 
 ## Supported tags and respective Dockerfile links
 
-* `2.5.1`, `2.5`, `latest` [(Dockerfile)](https://github.com/bringnow/docker-nominatim/blob/master/nominatim/Dockerfile)
+* `3.0.1`, `latest` [(Dockerfile)](https://github.com/whitepages/docker-nominatim/blob/master/nominatim/Dockerfile)
 
 ## Getting started
 
@@ -79,5 +79,6 @@ Then on the target machine, follow the steps from the [Getting Started](#getting
 
 ## Alternatives
 
+* [bringnow/docker-nominatim](https://github.com/bringnow/docker-nominatim)
 * [helvalius/nominatim-docker](https://github.com/helvalius/nominatim-docker)
 * [mediagis/nominatim-docker](https://github.com/mediagis/nominatim-docker)
