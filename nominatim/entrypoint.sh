@@ -30,10 +30,24 @@ function initialization {
   else
     log_info "==> Downloading Planet file..."
     chown -R nominatim:nominatim /importdata
+    cd /importdata
     START_DOWNLOAD=$(date +%s)
-    gosu nominatim curl -L -o /importdata/data.osm.pbf ${PLANET_DATA_URL} || die "Failed to download planet file"
+    log_info "Urls: ${PLANET_DATA_URLS}"
+    IFS=';' read -ra URLS <<< "$PLANET_DATA_URLS"
+    for PLANET_DATA_URL in $URLS; do
+      log_info "Downloading... $PLANET_DATA_URL"
+      gosu nominatim wget "$PLANET_DATA_URL" || die "Failed to download planet file"
+    done
+
     END_DOWNLOAD=$(date +%s)
+    for PBFFILE in $(ls *.pbf); do
+      gosu nominatim osmconvert ${PBFFILE} -o=$PBFFILE.o5m
+    done
+    gosu nominatim osmconvert *.o5m -o=allcountries.o5m
+    gosu nominatim osmconvert allcountries.o5m -o=data.osm.pbf
   fi
+
+
 
   log_info "==> Adding user www-data to database"
   gosu postgres createuser -s nominatim
